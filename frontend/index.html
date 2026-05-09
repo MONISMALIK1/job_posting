@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Job Link Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0f14;
+      --surface:   #151820;
+      --card:      #1c2030;
+      --border:    #2a2f45;
+      --accent:    #6c63ff;
+      --accent2:   #a78bfa;
+      --success:   #34d399;
+      --danger:    #f87171;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --glow:      0 0 30px rgba(108,99,255,.25);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    /* ── header ── */
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -.5px;
+    }
+    header p {
+      color: var(--muted);
+      margin-top: .4rem;
+      font-size: .9rem;
+    }
+
+    /* ── layout ── */
+    .container { max-width: 760px; margin: 0 auto; }
+
+    /* ── card ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .card-title {
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.25rem;
+    }
+
+    /* ── form ── */
+    .form-grid {
+      display: grid;
+      gap: .85rem;
+    }
+    .field label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: .4rem;
+    }
+    .field input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: .7rem 1rem;
+      color: var(--text);
+      font-size: .95rem;
+      font-family: inherit;
+      transition: border-color .2s, box-shadow .2s;
+      outline: none;
+    }
+    .field input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(108,99,255,.15);
+    }
+    .field input::placeholder { color: var(--muted); }
+
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; }
+
+    /* ── button ── */
+    .btn-save {
+      width: 100%;
+      margin-top: .5rem;
+      padding: .8rem;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .btn-save:hover  { transform: translateY(-1px); box-shadow: var(--glow); }
+    .btn-save:active { transform: translateY(0); }
+    .btn-save.loading { pointer-events: none; opacity: .7; }
+
+    /* ── toast ── */
+    #toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      padding: .65rem 1.25rem;
+      border-radius: 999px;
+      font-size: .85rem;
+      font-weight: 500;
+      opacity: 0;
+      transition: all .35s cubic-bezier(.34,1.56,.64,1);
+      z-index: 999;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    #toast.ok  { background: var(--success); color: #022c22; }
+    #toast.err { background: var(--danger);  color: #450a0a; }
+
+    /* ── counters ── */
+    .stats {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: .6rem 1rem;
+      font-size: .8rem;
+      color: var(--muted);
+    }
+    .stat span { color: var(--accent2); font-weight: 700; font-size: 1.1rem; margin-right: .3rem; }
+
+    /* ── search ── */
+    #search {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: .65rem 1rem;
+      color: var(--text);
+      font-size: .9rem;
+      font-family: inherit;
+      outline: none;
+      margin-bottom: 1rem;
+      transition: border-color .2s;
+    }
+    #search:focus { border-color: var(--accent); }
+    #search::placeholder { color: var(--muted); }
+
+    /* ── link list ── */
+    #link-list { display: flex; flex-direction: column; gap: .75rem; }
+
+    .link-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+      transition: border-color .2s, transform .15s;
+      animation: fadeIn .3s ease;
+    }
+    .link-item:hover { border-color: var(--accent); transform: translateX(3px); }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .link-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .link-body { flex: 1; min-width: 0; }
+    .link-title {
+      font-weight: 600;
+      font-size: .95rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .link-company {
+      font-size: .78rem;
+      color: var(--accent2);
+      margin-top: .15rem;
+    }
+    .link-url {
+      font-size: .75rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: .2rem;
+    }
+    .link-url a { color: inherit; text-decoration: none; }
+    .link-url a:hover { color: var(--accent2); }
+
+    .link-meta { font-size: .72rem; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+
+    .btn-del {
+      background: none;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: var(--muted);
+      cursor: pointer;
+      padding: .4rem .5rem;
+      font-size: 1rem;
+      transition: color .2s, border-color .2s, background .2s;
+      flex-shrink: 0;
+    }
+    .btn-del:hover { color: var(--danger); border-color: var(--danger); background: rgba(248,113,113,.08); }
+
+    /* ── empty state ── */
+    #empty {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--muted);
+      display: none;
+    }
+    #empty .icon { font-size: 2.5rem; margin-bottom: .75rem; }
+    #empty p { font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <h1>🔗 Job Link Hub</h1>
+      <p>Paste job posting URLs and keep them all in one place.</p>
+    </header>
+
+    <!-- Add link card -->
+    <div class="card">
+      <p class="card-title">Add new posting</p>
+      <div class="form-grid">
+        <div class="field">
+          <label for="url">Job URL *</label>
+          <input id="url" type="url" placeholder="https://linkedin.com/jobs/view/..." autocomplete="off" />
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label for="title">Job Title</label>
+            <input id="title" type="text" placeholder="ML Engineer" />
+          </div>
+          <div class="field">
+            <label for="company">Company</label>
+            <input id="company" type="text" placeholder="Acme Corp" />
+          </div>
+        </div>
+        <button class="btn-save" id="save-btn" onclick="saveLink()">Save Link</button>
+      </div>
+    </div>
+
+    <!-- Saved links card -->
+    <div class="card">
+      <div class="stats">
+        <div class="stat"><span id="total-count">0</span> saved</div>
+      </div>
+      <input id="search" type="text" placeholder="🔍  Search by title, company or URL…" oninput="filterLinks()" />
+      <p class="card-title">Saved postings</p>
+
+      <div id="empty">
+        <div class="icon">📭</div>
+        <p>No links saved yet.<br/>Paste your first job posting above!</p>
+      </div>
+
+      <div id="link-list"></div>
+    </div>
+
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <script>
+    const API = 'http://localhost:8000';
+    let allLinks = [];
+
+    // ── fetch & render ───────────────────────────────────────────────────────
+    async function loadLinks() {
+      try {
+        const res = await fetch(`${API}/links`);
+        allLinks = await res.json();
+        document.getElementById('total-count').textContent = allLinks.length;
+        renderLinks(allLinks);
+      } catch {
+        toast('Could not reach the API. Is the server running?', 'err');
+      }
+    }
+
+    function renderLinks(links) {
+      const list  = document.getElementById('link-list');
+      const empty = document.getElementById('empty');
+      list.innerHTML = '';
+      if (links.length === 0) { empty.style.display = 'block'; return; }
+      empty.style.display = 'none';
+
+      links.forEach(l => {
+        const date = new Date(l.created_at).toLocaleDateString('en-IN', {
+          day: '2-digit', month: 'short', year: 'numeric'
+        });
+        const title   = l.job_title || 'Untitled Role';
+        const company = l.company   || '';
+        const shortUrl = l.url.replace(/^https?:\/\/(www\.)?/, '').slice(0, 55) + (l.url.length > 60 ? '…' : '');
+
+        const el = document.createElement('div');
+        el.className = 'link-item';
+        el.dataset.id = l.id;
+        el.innerHTML = `
+          <div class="link-icon">💼</div>
+          <div class="link-body">
+            <div class="link-title">${esc(title)}</div>
+            ${company ? `<div class="link-company">${esc(company)}</div>` : ''}
+            <div class="link-url"><a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(shortUrl)}</a></div>
+          </div>
+          <div class="link-meta">${date}</div>
+          <button class="btn-del" title="Delete" onclick="deleteLink(${l.id}, this)">🗑</button>
+        `;
+        list.appendChild(el);
+      });
+    }
+
+    // ── search ───────────────────────────────────────────────────────────────
+    function filterLinks() {
+      const q = document.getElementById('search').value.toLowerCase();
+      const filtered = allLinks.filter(l =>
+        (l.job_title || '').toLowerCase().includes(q) ||
+        (l.company   || '').toLowerCase().includes(q) ||
+        l.url.toLowerCase().includes(q)
+      );
+      renderLinks(filtered);
+    }
+
+    // ── save ─────────────────────────────────────────────────────────────────
+    async function saveLink() {
+      const url     = document.getElementById('url').value.trim();
+      const title   = document.getElementById('title').value.trim();
+      const company = document.getElementById('company').value.trim();
+      const btn     = document.getElementById('save-btn');
+
+      if (!url) { toast('Please enter a URL.', 'err'); return; }
+
+      btn.textContent = 'Saving…';
+      btn.classList.add('loading');
+
+      try {
+        const res = await fetch(`${API}/links`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, job_title: title || null, company: company || null })
+        });
+
+        if (res.status === 409) { toast('This URL is already saved.', 'err'); return; }
+        if (!res.ok) throw new Error();
+
+        toast('Link saved! ✅', 'ok');
+        document.getElementById('url').value     = '';
+        document.getElementById('title').value   = '';
+        document.getElementById('company').value = '';
+        await loadLinks();
+      } catch {
+        toast('Failed to save. Check the server.', 'err');
+      } finally {
+        btn.textContent = 'Save Link';
+        btn.classList.remove('loading');
+      }
+    }
+
+    // ── delete ───────────────────────────────────────────────────────────────
+    async function deleteLink(id, btn) {
+      btn.textContent = '⏳';
+      btn.disabled = true;
+      try {
+        const res = await fetch(`${API}/links/${id}`, { method: 'DELETE' });
+        if (res.status === 204) {
+          const el = document.querySelector(`.link-item[data-id="${id}"]`);
+          if (el) { el.style.opacity = '0'; el.style.transform = 'translateX(20px)'; el.style.transition = 'all .25s'; setTimeout(() => el.remove(), 250); }
+          allLinks = allLinks.filter(l => l.id !== id);
+          document.getElementById('total-count').textContent = allLinks.length;
+          if (allLinks.length === 0) document.getElementById('empty').style.display = 'block';
+          toast('Deleted.', 'ok');
+        }
+      } catch {
+        toast('Delete failed.', 'err');
+        btn.textContent = '🗑';
+        btn.disabled = false;
+      }
+    }
+
+    // ── enter to submit ───────────────────────────────────────────────────────
+    ['url','title','company'].forEach(id => {
+      document.getElementById(id).addEventListener('keydown', e => {
+        if (e.key === 'Enter') saveLink();
+      });
+    });
+
+    // ── toast helper ─────────────────────────────────────────────────────────
+    let toastTimer;
+    function toast(msg, type) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = `show ${type}`;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { el.className = ''; }, 3000);
+    }
+
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    loadLinks();
+  </script>
+</body>
+</html>
